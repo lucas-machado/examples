@@ -31,3 +31,12 @@ instance_group [
     kind: KIND_CPU
   }
 ]
+
+dynamic_batching {
+  # Quanto tempo (em microsegundos) o Triton deve esperar para tentar
+  # formar o batch máximo antes de processar o que já tem na fila.
+  max_queue_delay_microseconds: 100 
+  
+  # Você pode definir tamanhos de batch preferenciais para otimizar o cache da CPU
+  preferred_batch_size: [ 4, 8 ]
+}
