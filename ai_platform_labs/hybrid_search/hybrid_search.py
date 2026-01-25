@@ -101,9 +101,9 @@ class RetrievalPlatform:
 # --- Execução ---
 if __name__ == "__main__":
     documents = [
-        "A política de reembolso da nossa startup permite devoluções em até 30 dias.",
-        "O servidor de produção deve ser reiniciado apenas aos domingos às 03:00.",
-        "O CTO definiu que usaremos vLLM para escalar nossos modelos."
+        "Our startup's refund policy allows for returns within 30 days.",
+        "The production server must be restarted only on Sundays at 03:00.",
+        "The CTO has determined that we will use vLLM to scale our models."
     ]
 
     platform = RetrievalPlatform()
@@ -113,6 +113,6 @@ if __name__ == "__main__":
     platform.ingest("startup_docs", documents)
 
     print("\n--- Buscando por 'reembolso' ---")
-    results = platform.hybrid_search("reembolso", "startup_docs")
+    results = platform.hybrid_search("money", "startup_docs")
     for point, rank_score in results:
         print(f"Score: {rank_score:.4f} | {point.payload['text']}")
