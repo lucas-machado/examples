@@ -1,6 +1,8 @@
 import sys
 import os
 import operator
+import time
+import uuid
 from typing import Annotated, TypedDict, List
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
@@ -9,6 +11,8 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from typing import Type
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.checkpoint.memory import MemorySaver
+
 
 # Adiciona o diretório raiz 'snippets' ao caminho de busca do Python
 # __file__ é o arquivo atual. dirname sobe para 'agentic_platform'.
@@ -94,7 +98,9 @@ def create_agent_graph(orchestrator):
     workflow.add_conditional_edges("agent", tools_condition)
     workflow.add_edge("tools", "agent")
 
-    return workflow.compile()
+    memory = MemorySaver()
+
+    return workflow.compile(checkpointer=memory)
 
 # --- Execução do Desafio ---
 if __name__ == "__main__":
@@ -117,8 +123,18 @@ if __name__ == "__main__":
 
 
     app = create_agent_graph(orchestrator)
-    
 
+    random_id = str(uuid.uuid4())[:8]
+    config = {"configurable": {"thread_id": f"lucas_{random_id}" }}
+    
+    print("--- Primeira interação ---")
     inputs = {"messages": [HumanMessage(content="What is our policy for Sunday server restarts?")]}
-    for output in app.stream(inputs):
+    for output in app.stream(inputs, config=config):
         print(output)
+
+    print("--- Segunda interação ---")
+    inputs = {"messages": [HumanMessage(content="What is sunday restart policy again?")]}
+    for output in app.stream(inputs, config=config):
+        print(output)
+
+    time.sleep(2)
