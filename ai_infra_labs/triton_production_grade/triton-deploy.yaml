@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triton-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triton-server
+  template:
+    metadata:
+      labels:
+        app: triton-server
+    spec:
+      # 1. Usa o ServiceAccount que você já criou com permissão ao S3
+      serviceAccountName: triton-server-sa
+      
+      # 2. Garante que o Pod vá para o nó com o label que você definiu no Terraform
+      nodeSelector:
+        hardware-type: gpu
+
+      # 3. Permite que o Pod ignore a "marca" (taint) de GPU do EKS
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
+
+      containers:
+        - name: triton-server
+          image: nvcr.io/nvidia/tritonserver:24.12-py3
+          args:
+            - tritonserver
+            - --model-repository=s3://triton-model-repository-0705353e/model_repository
+            - --model-control-mode=poll
+            - --repository-poll-secs=30
+          ports:
+            - containerPort: 8001 # gRPC
+          resources:
+            limits:
+              # 4. Reserva a GPU T4 para este container
+              nvidia.com/gpu: 1
