@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # O Supervisor (Entry Point & Graph Logic)
+  # Roda em http://localhost:8000
+  supervisor:
+    build: ./supervisor
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - RESEARCHER_URL=http://researcher-service:8001
+      - WRITER_URL=http://writer-agent:8002
+    depends_on:
+      - redis
+      - researcher-service
+      - writer-agent
+
+  # Serviço de Busca (Antigo Researcher Agent)
+  # Roda em http://localhost:8001 (interno)
+  researcher-service:
+    build: ./services/researcher
+    ports: ["8001:8001"]
+    env_file: .env
+    environment:
+      - PORT=8001
+
+  # Agente Writer (Stateless API + LLM)
+  # Roda em http://localhost:8002 (interno)
+  writer-agent:
+    build: ./agents/writer
+    ports: ["8002:8002"]
+    env_file: .env
+    environment:
+      - PORT=8002
+
+  # Worker: Processamento Assíncrono (O "Músculo")
+  # Consome mensagens da fila Redis
+  media-worker:
+    build: ./workers
+    env_file: .env
+    depends_on:
+      - redis
+    command: python media_worker.py media_queue
+
+  # Banco de Dados de Mensagens & Estado
+  redis:
+    image: redis:alpine
+    ports: ["6379:6379"]
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
