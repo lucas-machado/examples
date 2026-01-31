@@ -48,13 +48,14 @@ async def call_researcher_agent(query: str) -> str:
     Use this tool to research information about a topic.
     It calls the Researcher Agent and returns the context found.
     """
-    print(f"[Tool] Calling Researcher with query: {query}")
+    print(f"[Tool] Calling Researcher with query: {query}", flush=True)
     async with httpx.AsyncClient() as client:
         try:
             res = await client.post(f"{RESEARCHER_URL}/search", json={"text": query}, timeout=30.0)
             res.raise_for_status()
             data = res.json().get("results", "No results found.")
-            print(f"[Tool] Researcher returned: {str(data)[:100]}...") # Log parcial
+            # Log parcial para não poluir
+            print(f"[Tool] Researcher returned: {str(data)[:100]}...", flush=True) 
             return data
         except Exception as e:
             return f"Error calling researcher: {e}"
@@ -65,7 +66,7 @@ async def call_writer_agent(topic: str, context: str) -> str:
     Use this tool to write the final content/article.
     You MUST provide the original topic and the context gathered from research.
     """
-    print(f"[Tool] Calling Writer for topic: {topic}")
+    print(f"[Tool] Calling Writer for topic: {topic}", flush=True)
     async with httpx.AsyncClient() as client:
         try:
             payload = {"topic": topic, "context": context}
@@ -81,7 +82,7 @@ def publish_to_worker(topic: str, final_content: str) -> str:
     Use this tool ONLY when the content is ready and finalized.
     It sends the work to the processing queue.
     """
-    print(f"[Tool] Dispatching to Worker...")
+    print(f"[Tool] Dispatching to Worker...", flush=True)
     if r_client:
         task = {
             "task": "publish_content",

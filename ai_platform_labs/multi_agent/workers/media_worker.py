@@ -20,17 +20,17 @@ def worker_loop(queue_name):
         task_name = task.get('task')
         data = task.get('data', {})
         
-        print(f"[Worker] Processando {task_name}...")
+        print(f"[Worker] Processando {task_name}...", flush=True)
         
         if task_name == 'publish_content':
             topic = data.get('topic', 'N/A')
             content = data.get('content', 'No Content')
-            print(f"\n========== [Worker] PUBLISHING CONTENT ({topic}) ==========")
-            print(content)
-            print("===========================================================\n")
+            print(f"\n========== [Worker] PUBLISHING CONTENT ({topic}) ==========", flush=True)
+            print(content, flush=True)
+            print("===========================================================\n", flush=True)
         
         time.sleep(2) # Simula tarefa pesada
-        print(f"[Worker] {task_name} concluído com sucesso!")
+        print(f"[Worker] {task_name} concluído com sucesso!", flush=True)
 
 if __name__ == "__main__":
     import sys
