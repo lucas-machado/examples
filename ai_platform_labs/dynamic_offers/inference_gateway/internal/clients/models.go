@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-type Features map[string]any
-
 type RecommendationResponse struct {
 	RecommendationID string `json:"recommendation_id"`
 }

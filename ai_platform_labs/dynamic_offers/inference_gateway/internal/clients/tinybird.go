@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 )
+
+type Features map[string]any
 
 type TinybirdClient struct {
 	httpClient *http.Client
@@ -26,6 +29,55 @@ func NewTinybirdClient(host, token string, logger *slog.Logger) *TinybirdClient 
 		token:  token,
 		logger: logger,
 	}
+}
+
+func (c *TinybirdClient) GetFeatures(ctx context.Context, gameID, userID string) (Features, error) {
+	// Defina o nome do seu Pipe aqui.
+	// O Pipe deve aceitar um parametro 'user_id' e 'game_id'.
+	pipeName := "user_features"
+
+	endpoint := fmt.Sprintf("%s/v0/pipes/%s.json", c.host, pipeName)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse url: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("user_id", userID)
+	q.Set("game_id", gameID)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("tinybird api error: status=%d", resp.StatusCode)
+	}
+
+	var tbResp struct {
+		Data []Features `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&tbResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(tbResp.Data) == 0 {
+		// Retorna mapa vazio se não encontrar features para o usuário
+		return Features{}, nil
+	}
+
+	return tbResp.Data[0], nil
 }
 
 func (c *TinybirdClient) Ingest(ctx context.Context, dataSource string, payload any) error {
