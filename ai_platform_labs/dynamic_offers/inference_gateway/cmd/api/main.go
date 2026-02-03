@@ -49,7 +49,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler := server.NewHandler(appCtx, logger, abConfig)
+	tinybirdClient := clients.NewTinybirdClient(cfg.TinybirdURL, cfg.TinybirdKey, logger)
+	modelClient := clients.NewModelClient(cfg.ModelBaseURL)
+
+	handler := server.NewHandler(appCtx, logger, abConfig, tinybirdClient, modelClient)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
