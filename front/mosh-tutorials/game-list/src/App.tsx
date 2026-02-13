@@ -1,9 +1,9 @@
-import Like from "./components/Like";
+import { RefTest } from "./components/RefTest";
 
 export default function App() {
   return (
-    <div>
-      <Like onClick={() => console.log("clicked")} />
-    </div>
+    <>
+      <RefTest />
+    </>
   );
 }
