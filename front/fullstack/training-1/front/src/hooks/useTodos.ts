@@ -53,7 +53,7 @@ export function useTodos() {
         input,
       );
       setTodos((curr) =>
-        curr.map((todo) => (todo === newTodo ? response.data : todo)),
+        curr.map((todo) => (todo.id === newTodo.id ? response.data : todo)),
       );
     } catch (err) {
       setError((err as AxiosError).message);

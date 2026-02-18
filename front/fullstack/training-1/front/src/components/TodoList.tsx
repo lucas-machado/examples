@@ -6,12 +6,18 @@ export function TodoList() {
   const nameRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = () => {
-    if (nameRef.current)
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (nameRef.current) {
       addTodo({
         title: nameRef.current.value,
         description: descriptionRef.current?.value,
       });
+      nameRef.current.value = "";
+    }
+
+    if (descriptionRef.current) descriptionRef.current.value = "";
   };
 
   const handleDelete = (todo: Todo) => {
