@@ -3,7 +3,14 @@ import axios, { AxiosError, CanceledError } from "axios";
 
 export interface Todo {
   id: number;
-  name: string;
+  title: string;
+  description?: string | null;
+  completed: boolean;
+}
+
+export interface TodoCreateInput {
+  title: string;
+  description?: string;
 }
 
 export function useTodos() {
@@ -14,7 +21,7 @@ export function useTodos() {
     const controller = new AbortController();
 
     const fetchTodos = async () => {
-      const request = axios.get<Todo[]>("http://localhost:8000/todo", {
+      const request = axios.get<Todo[]>("http://localhost:8000/todos", {
         signal: controller.signal,
       });
 
@@ -32,21 +39,40 @@ export function useTodos() {
     return () => controller.abort();
   }, []);
 
-  const addTodo = async (name: string) => {
-    const newTodo = { id: Date.now() * -1, name: name };
+  const addTodo = async (input: TodoCreateInput) => {
+    const newTodo: Todo = {
+      id: Date.now() * -1,
+      title: input.title,
+      description: input.description,
+      completed: false,
+    };
     try {
       setTodos((curr) => [...curr, newTodo]);
-      const response = await axios.post<Todo>("http://localhost:8000/todo", {
-        name,
-      });
+      const response = await axios.post<Todo>(
+        "http://localhost:8000/todos",
+        input,
+      );
       setTodos((curr) =>
         curr.map((todo) => (todo === newTodo ? response.data : todo)),
       );
     } catch (err) {
       setError((err as AxiosError).message);
-      setTodos((curr) => curr.filter((todo) => todo !== newTodo));
+      setTodos((curr) => curr.filter((todo) => todo.id !== newTodo.id));
     }
   };
 
-  return { todos, error, addTodo };
+  const deleteTodo = async (id: number) => {
+    const todoToRemove = todos.find((todo) => todo.id === id);
+    if (!todoToRemove) return;
+
+    try {
+      setTodos((curr) => curr.filter((todo) => todo !== todoToRemove));
+      await axios.delete("http://localhost:8000/todos/" + id);
+    } catch (err) {
+      setError((err as AxiosError).message);
+      setTodos((curr) => [...curr, todoToRemove]);
+    }
+  };
+
+  return { todos, error, addTodo, deleteTodo };
 }

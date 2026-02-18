@@ -1,12 +1,21 @@
 import { useRef } from "react";
-import { useTodos, type Todo } from "../hooks/useTodos";
+import { useTodos, type Todo, type TodoCreateInput } from "../hooks/useTodos";
 
 export function TodoList() {
-  const { todos, error, addTodo } = useTodos();
+  const { todos, error, addTodo, deleteTodo } = useTodos();
   const nameRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
-    if (nameRef.current) addTodo(nameRef.current.value);
+    if (nameRef.current)
+      addTodo({
+        title: nameRef.current.value,
+        description: descriptionRef.current?.value,
+      });
+  };
+
+  const handleDelete = (todo: Todo) => {
+    deleteTodo(todo.id);
   };
 
   return (
@@ -14,12 +23,17 @@ export function TodoList() {
       {error && <p>{error}</p>}
       <ul>
         {todos.map((todo) => (
-          <li key={todo.id}>{todo.name}</li>
+          <li key={todo.id}>
+            {todo.title} {todo.description}
+            <button onClick={() => handleDelete(todo)}>Delete</button>
+          </li>
         ))}
       </ul>
       <form onSubmit={handleSubmit}>
         <label htmlFor="name">Nome</label>
         <input id="name" type="text" ref={nameRef}></input>
+        <label htmlFor="description">Descrição</label>
+        <input id="description" type="text" ref={descriptionRef}></input>
         <button>Add</button>
       </form>
     </>
