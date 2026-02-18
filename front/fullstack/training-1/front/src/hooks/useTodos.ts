@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import axios, { AxiosError, CanceledError } from "axios";
+import { AxiosError, CanceledError } from "axios";
+import api from "../api/client";
 
 export interface Todo {
   id: number;
@@ -21,7 +22,7 @@ export function useTodos() {
     const controller = new AbortController();
 
     const fetchTodos = async () => {
-      const request = axios.get<Todo[]>("http://localhost:8000/todos", {
+      const request = api.get<Todo[]>("/todos", {
         signal: controller.signal,
       });
 
@@ -48,10 +49,7 @@ export function useTodos() {
     };
     try {
       setTodos((curr) => [...curr, newTodo]);
-      const response = await axios.post<Todo>(
-        "http://localhost:8000/todos",
-        input,
-      );
+      const response = await api.post<Todo>("/todos", input);
       setTodos((curr) =>
         curr.map((todo) => (todo.id === newTodo.id ? response.data : todo)),
       );
@@ -67,7 +65,7 @@ export function useTodos() {
 
     try {
       setTodos((curr) => curr.filter((todo) => todo !== todoToRemove));
-      await axios.delete("http://localhost:8000/todos/" + id);
+      await api.delete("/todos/" + id);
     } catch (err) {
       setError((err as AxiosError).message);
       setTodos((curr) => [...curr, todoToRemove]);

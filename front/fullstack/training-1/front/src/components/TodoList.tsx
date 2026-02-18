@@ -40,7 +40,7 @@ export function TodoList() {
         <input id="name" type="text" ref={nameRef}></input>
         <label htmlFor="description">Descrição</label>
         <input id="description" type="text" ref={descriptionRef}></input>
-        <button>Add</button>
+        <button type="submit">Add</button>
       </form>
     </>
   );
