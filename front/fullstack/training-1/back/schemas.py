@@ -1,5 +1,18 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class UserBase(BaseModel):
+    email: EmailStr
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: int
 
 class TodoBase(BaseModel):
     title: str
