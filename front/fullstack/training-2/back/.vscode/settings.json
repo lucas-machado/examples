@@ -1,0 +1,3 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/front/fullstack/training-1/back/venv/bin/python"
+}
