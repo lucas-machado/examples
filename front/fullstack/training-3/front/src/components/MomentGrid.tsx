@@ -12,6 +12,7 @@ export function MomentGrid({ moments, deleteMoment }: MomentGridProps) {
       <div className="grid grid-cols-3 gap-4">
         {moments.map((moment) => (
           <MomentCard
+            key={moment.id}
             title={moment.title}
             url={moment.url}
             onDelete={() => deleteMoment(moment)}

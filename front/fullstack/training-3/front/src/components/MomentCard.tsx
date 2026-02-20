@@ -8,7 +8,7 @@ export function MomentCard({ title, url, onDelete }: MomentCardProps) {
   return (
     <div>
       <p>{title}</p>
-      <p>{url}</p>
+      <img src={url} />
       <button className="border px-3" onClick={() => onDelete()}>
         x
       </button>

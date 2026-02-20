@@ -2,13 +2,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi import FastAPI, status, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 import schemas
 from database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import models
+import s3
+import asyncio
 
 app = FastAPI(title="training 3 - image manager")
 
@@ -21,8 +23,30 @@ app.add_middleware(
 )
 
 @app.post("/moments", response_model=schemas.MomentResponse, status_code=status.HTTP_201_CREATED)
-async def create_moment(moment: schemas.MomentBase, db: AsyncSession = Depends(get_db)):
-    new_moment = models.Moment(**moment.model_dump())
+async def create_moment(
+    title: str = Form(...), 
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    try:
+        url = await asyncio.to_thread(
+            s3.upload_image,
+            contents,
+            file.content_type or "",
+            file.filename
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+    new_moment = models.Moment(title=title, url=url)
     db.add(new_moment)
     await db.commit()
     await db.refresh(new_moment)
@@ -61,7 +85,7 @@ async def update_moment(id: int, moment: schemas.MomentBase, db: AsyncSession = 
 
     existing.title = moment.title
     existing.url = moment.url
-    
+
     await db.commit()
     await db.refresh(existing)    
     return existing

@@ -1,13 +1,15 @@
 import "./App.css";
 import { MomentGrid } from "./components/MomentGrid";
-import { useMoments, type CreateMoment } from "./hooks/useMoments";
+import { useMoments } from "./hooks/useMoments";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const momentSchema = z.object({
   title: z.string().min(6, { message: "min title is 6" }),
-  url: z.url(),
+  files: z
+    .instanceof(FileList)
+    .refine((list) => list.length == 1, "select a singles image"),
 });
 
 type FormData = z.infer<typeof momentSchema>;
@@ -22,7 +24,9 @@ function App() {
   const { moments, error, addMoment, deleteMoment } = useMoments();
 
   const onSubmit = (formData: FormData) => {
-    addMoment(formData);
+    if (!formData.files || !formData.files[0]) return;
+    const url = URL.createObjectURL(formData.files[0]);
+    addMoment({ title: formData.title, url: url, file: formData.files[0] });
   };
 
   return (
@@ -37,9 +41,9 @@ function App() {
         {errors.title && <p>{errors.title.message}</p>}
 
         <label>
-          URL: <input className="border" type="text" {...register("url")} />
+          URL: <input className="border" type="file" {...register("files")} />
         </label>
-        {errors.url && <p>{errors.url.message}</p>}
+        {errors.files && <p>{errors.files.message}</p>}
 
         <button
           type="submit"

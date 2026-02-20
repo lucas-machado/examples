@@ -2,12 +2,16 @@ import { AxiosError, CanceledError } from "axios";
 import api from "../client/api";
 import { useState, useEffect } from "react";
 
-export interface CreateMoment {
+interface MomentBase {
   title: string;
   url: string;
 }
 
-export interface Moment extends CreateMoment {
+export interface CreateMoment extends MomentBase {
+  file: File;
+}
+
+export interface Moment extends MomentBase {
   id: number;
 }
 
@@ -40,15 +44,26 @@ export function useMoments() {
   const addMoment = async (moment: CreateMoment) => {
     const newMoment: Moment = {
       id: Date.now() * -1,
-      ...moment,
+      title: moment.title,
+      url: moment.url,
     };
     try {
       setMoments((curr) => [...curr, newMoment]);
-      const response = await api.post<Moment>("/moments", newMoment);
+      const formData = new FormData();
+      formData.append("title", moment.title);
+      formData.append("file", moment.file);
+      const response = await api.post<Moment>("/moments", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setMoments((curr) =>
-        curr.map((moment) =>
-          moment.id == newMoment.id ? response.data : moment,
-        ),
+        curr.map((m) => {
+          if (m.id === newMoment.id) {
+            URL.revokeObjectURL(newMoment.url);
+            return response.data;
+          } else {
+            return m;
+          }
+        }),
       );
     } catch (err) {
       setError((err as AxiosError).message);
