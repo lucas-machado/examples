@@ -1,35 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import "./App.css";
+import { MomentGrid } from "./components/MomentGrid";
+import { useMoments, type CreateMoment } from "./hooks/useMoments";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const momentSchema = z.object({
+  title: z.string().min(6, { message: "min title is 6" }),
+  url: z.url(),
+});
+
+type FormData = z.infer<typeof momentSchema>;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({ resolver: zodResolver(momentSchema) });
+
+  const { moments, error, addMoment, deleteMoment } = useMoments();
+
+  const onSubmit = (formData: FormData) => {
+    addMoment(formData);
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+      {error && <p>{error}</p>}
+      <MomentGrid moments={moments} deleteMoment={deleteMoment} />
+
+      <form className="px-3 py-2" onSubmit={handleSubmit(onSubmit)}>
+        <label>
+          Title: <input className="border" type="text" {...register("title")} />
+        </label>
+        {errors.title && <p>{errors.title.message}</p>}
+
+        <label>
+          URL: <input className="border" type="text" {...register("url")} />
+        </label>
+        {errors.url && <p>{errors.url.message}</p>}
+
+        <button
+          type="submit"
+          className="border px-4"
+          style={{ marginLeft: "10px" }}
+        >
+          Add
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      </form>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

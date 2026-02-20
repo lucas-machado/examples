@@ -61,6 +61,7 @@ async def update_moment(id: int, moment: schemas.MomentBase, db: AsyncSession = 
 
     existing.title = moment.title
     existing.url = moment.url
+    
     await db.commit()
     await db.refresh(existing)    
     return existing
