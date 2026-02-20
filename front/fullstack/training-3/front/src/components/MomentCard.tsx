@@ -1,3 +1,5 @@
+import styles from "./MomentCard.module.css";
+
 interface MomentCardProps {
   title: string;
   url: string;
@@ -6,10 +8,10 @@ interface MomentCardProps {
 
 export function MomentCard({ title, url, onDelete }: MomentCardProps) {
   return (
-    <div>
+    <div className={styles.card}>
       <p>{title}</p>
       <img src={url} />
-      <button className="border px-3" onClick={() => onDelete()}>
+      <button className={styles.overlay} onClick={() => onDelete()}>
         x
       </button>
     </div>
