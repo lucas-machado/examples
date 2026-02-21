@@ -3,29 +3,21 @@ import { useRef } from "react";
 import { Todo } from "../hooks/useTodos";
 import axios from "axios";
 
-interface AddTodoContext {
-  previousTodos: Todo[];
-}
-
 const TodoForm = () => {
   const ref = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
-  const addTodo = useMutation<Todo, Error, Todo, AddTodoContext>({
+  const addTodo = useMutation<Todo, Error, Todo>({
     mutationFn: (todo: Todo) =>
       axios
         .post<Todo>("https://jsonplaceholder.typicode.com/todosx", todo)
         .then((res) => res.data),
     onMutate: (newTodo: Todo) => {
-      const previousTodos = queryClient.getQueryData<Todo[]>(["todos"]) || [];
-
       queryClient.setQueryData<Todo[]>(["todos"], (todos) => [
         newTodo,
         ...(todos || []),
       ]);
 
       if (ref.current) ref.current.value = "";
-
-      return { previousTodos };
     },
     onSuccess: (savedTodo, newTodo) => {
       queryClient.setQueryData<Todo[]>(["todos"], (todos) =>
@@ -35,7 +27,10 @@ const TodoForm = () => {
     onError: (error, newTodo, context) => {
       if (!context) return;
 
-      queryClient.setQueryData<Todo[]>(["todos"], context.previousTodos);
+      queryClient.setQueryData<Todo[]>(
+        ["todos"],
+        (current) => current?.filter((todo) => todo !== newTodo) ?? [],
+      );
     },
   });
 
