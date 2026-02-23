@@ -17,4 +17,5 @@ const useCounterStore = create<CounterStore>((set) => ({
 
 if (process.env.NODE_ENV === "development")
   mountStoreDevtool("Counter Store", useCounterStore);
+
 export default useCounterStore;
