@@ -1,6 +1,7 @@
-import { AxiosError, CanceledError } from "axios";
-import api from "../core/apiClient";
-import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CACHE_KEY_MOMENTS } from "../constants";
+import axiosInstance from "../core/axiosInstance";
+import axios from "axios";
 
 interface MomentBase {
   title: string;
@@ -15,88 +16,94 @@ export interface Moment extends MomentBase {
   id: number;
 }
 
-export function useMoments() {
-  const [moments, setMoments] = useState<Moment[]>([]);
-  const [error, setError] = useState("");
+export function useGetMoments() {
+  return useQuery<Moment[], Error>({
+    queryKey: CACHE_KEY_MOMENTS,
+    queryFn: async () => {
+      const res = await axiosInstance.get<Moment[]>("/moments");
+      return res.data;
+    },
+  });
+}
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchMoments = async () => {
-      try {
-        const request = api.get<Moment[]>("/moments", {
-          signal: controller.signal,
+export function useAddMoment() {
+  const queryClient = useQueryClient();
+  return useMutation<Moment, Error, CreateMoment, { optimisticMoment: Moment }>(
+    {
+      mutationFn: async (moment: CreateMoment) => {
+        const formData = new FormData();
+        formData.append("title", moment.title);
+        formData.append("file", moment.file);
+        const res = await axiosInstance.post<Moment>("/moments", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
+        return res.data;
+      },
+      onMutate: (newMoment: CreateMoment) => {
+        const optimisticMoment: Moment = {
+          id: Date.now() * -1,
+          title: newMoment.title,
+          url: newMoment.url,
+        };
 
-        const result = await request;
-        setMoments(result.data);
-      } catch (err) {
-        if (err instanceof CanceledError) return;
-        setError((err as AxiosError).message);
-      }
-    };
+        queryClient.setQueryData<Moment[]>(CACHE_KEY_MOMENTS, (moments) => [
+          optimisticMoment,
+          ...(moments || []),
+        ]);
 
-    fetchMoments();
+        return { optimisticMoment };
+      },
+      onSuccess: (savedMoment, _newMoment, context) => {
+        queryClient.setQueryData<Moment[]>(CACHE_KEY_MOMENTS, (moments) =>
+          moments?.map((m) => {
+            if (m === context.optimisticMoment) {
+              URL.revokeObjectURL(m.url);
+              return savedMoment;
+            } else {
+              return m;
+            }
+          }),
+        );
+      },
+      onError: (error, _newMoment, context) => {
+        queryClient.setQueryData<Moment[]>(CACHE_KEY_MOMENTS, (moments) =>
+          moments?.filter((m) => m !== context?.optimisticMoment),
+        );
+      },
+    },
+  );
+}
 
-    return () => controller.abort();
-  }, []);
+export function useDeleteMoment() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    void,
+    Error,
+    number,
+    { optimisticMoment: Moment | undefined }
+  >({
+    mutationFn: async (id: number) => {
+      await axiosInstance.delete("/moments/" + id);
+    },
+    onMutate: (id: number) => {
+      const optimisticMoment = queryClient
+        .getQueryData<Moment[]>(CACHE_KEY_MOMENTS)
+        ?.find((m) => m.id === id);
 
-  const addMoment = async (moment: CreateMoment) => {
-    const newMoment: Moment = {
-      id: Date.now() * -1,
-      title: moment.title,
-      url: moment.url,
-    };
-    try {
-      setMoments((curr) => [...curr, newMoment]);
-      const formData = new FormData();
-      formData.append("title", moment.title);
-      formData.append("file", moment.file);
-      const response = await api.post<Moment>("/moments", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setMoments((curr) =>
-        curr.map((m) => {
-          if (m.id === newMoment.id) {
-            URL.revokeObjectURL(newMoment.url);
-            return response.data;
-          } else {
-            return m;
-          }
-        }),
+      queryClient.setQueryData<Moment[]>(CACHE_KEY_MOMENTS, (moments) =>
+        moments?.filter((m) => m.id !== id),
       );
-    } catch (err) {
-      setError((err as AxiosError).message);
-      setMoments((curr) => curr.filter((moment) => moment.id !== newMoment.id));
-    }
-  };
 
-  const deleteMoment = async (moment: Moment) => {
-    try {
-      setMoments((curr) => curr.filter((m) => m.id !== moment.id));
-      await api.delete("/moments/" + moment.id);
-    } catch (err) {
-      setError((err as AxiosError).message);
-      setMoments((curr) => [...curr, moment]);
-    }
-  };
+      return { optimisticMoment };
+    },
+    onError: (_data, _id, context) => {
+      const moment = context?.optimisticMoment;
+      if (!moment) return;
 
-  const updateMoment = async (moment: Moment) => {
-    const original = moments.find((m) => m.id === moment.id);
-    if (!original) return;
-
-    try {
-      setMoments((curr) =>
-        curr.map((m) => (m.id === moment.id ? { ...moment } : m)),
-      );
-      await api.put("/moments/" + moment.id, moment);
-    } catch (err) {
-      setError((err as AxiosError).message);
-      setMoments((curr) =>
-        curr.map((m) => (m.id === moment.id ? original : m)),
-      );
-    }
-  };
-
-  return { moments, error, addMoment, deleteMoment, updateMoment };
+      queryClient.setQueryData<Moment[]>(CACHE_KEY_MOMENTS, (moments) => [
+        moment,
+        ...(moments || []),
+      ]);
+    },
+  });
 }

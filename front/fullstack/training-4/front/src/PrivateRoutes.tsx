@@ -1,5 +1,7 @@
+import { Outlet } from "react-router-dom";
+
 const PrivateRoutes = () => {
-  return <div></div>;
+  return <Outlet />;
 };
 
 export default PrivateRoutes;
