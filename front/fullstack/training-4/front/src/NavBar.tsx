@@ -1,6 +1,10 @@
 import { NavLink } from "react-router-dom";
+import { useAuthStore } from "./auth/useAuthStore";
 
 const NavBar = () => {
+  const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
+
   return (
     <nav
       className="navbar navbar-expand-lg"
@@ -39,9 +43,13 @@ const NavBar = () => {
               </NavLink>
             </li>
             <li className="nav-item">
-              <NavLink className="nav-link" to="/login">
-                Login
-              </NavLink>
+              {!token ? (
+                <NavLink className="nav-link" to="/login">
+                  Login
+                </NavLink>
+              ) : (
+                <p onClick={() => logout()}>Logout</p>
+              )}
             </li>
           </ul>
         </div>
