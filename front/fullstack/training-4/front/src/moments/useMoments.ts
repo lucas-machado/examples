@@ -1,5 +1,5 @@
 import { AxiosError, CanceledError } from "axios";
-import api from "../client/api";
+import api from "../core/apiClient";
 import { useState, useEffect } from "react";
 
 interface MomentBase {

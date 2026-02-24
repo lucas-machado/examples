@@ -1,4 +1,4 @@
-import { type Moment } from "../hooks/useMoments";
+import { type Moment } from "./useMoments";
 import { MomentCard } from "./MomentCard";
 
 export interface MomentGridProps {
