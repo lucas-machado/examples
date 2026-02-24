@@ -76,17 +76,17 @@ async def register(
     user: schemas.UserCreate, 
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(models.User)).where(models.User.email == user.email)
+    result = await db.execute(select(models.User).where(models.User.username == user.email))
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    db_user = models.User(email=user.email, password_hash=pwd_context.hash(user.password))
+    db_user = models.User(username=user.email, password_hash=pwd_context.hash(user.password))
     db.add(db_user)
 
     await db.commit()
     await db.refresh(db_user)
 
-    access_token = create_access_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": db_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -95,7 +95,7 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(models.User).where(models.User.email == form_data.username))
+    result = await db.execute(select(models.User).where(models.User.username == form_data.username))
     user = result.scalars().first()
 
     if not user or not pwd_context.verify(form_data.password, user.password_hash):
